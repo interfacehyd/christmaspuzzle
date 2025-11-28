@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Christmas Puzzle Reveal</title>
-
 <style>
 body {
     font-family: "Poppins", sans-serif;
@@ -37,7 +36,6 @@ body {
     background: rgba(255,255,255,0.15);
     backdrop-filter: blur(6px);
     box-shadow: 0 0 25px rgba(255,0,0,0.5);
-    position: relative;
 }
 
 .piece {
@@ -45,12 +43,10 @@ body {
     height: 100%;
     aspect-ratio: 1;
     background-size: 500px 500px;
-    cursor: grab;
     border-radius: 12px;
-    transition: transform 0.2s, box-shadow 0.2s;
     border: 2px solid rgba(255,255,255,0.4);
-    touch-action: none;
-    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .piece:hover {
@@ -118,7 +114,7 @@ body {
 
 <div class="title-box">
     <h1>🎄 Magical Christmas Puzzle 🎄</h1>
-    <p>Rearrange all 16 pieces to form the Christmas image!</p>
+    <p>Tap two pieces to swap them!</p>
 </div>
 
 <div id="puzzleContainer"></div>
@@ -130,8 +126,7 @@ body {
 <div id="revealSection">
     <h2>🎉 You're Invited! 🎉</h2>
 
-    <img src="lcd.jpeg"
-         style="width: 100%; border-radius: 12px; margin-bottom: 20px;">
+    <img src="lcd.jpeg" style="width: 100%; border-radius: 12px; margin-bottom: 20px;">
 
     <video width="100%" controls style="border-radius:12px;">
         <source src="reveal.mp4" type="video/mp4">
@@ -146,8 +141,7 @@ body {
 const imageURL = "santaclause.avif"; 
 const container = document.getElementById("puzzleContainer");
 let positions = [];
-let draggedPiece = null;
-let offsetX, offsetY;
+let firstSelected = null;
 
 /* Create 16 pieces */
 for (let i = 0; i < 16; i++) {
@@ -168,48 +162,18 @@ for (let i = 0; i < 16; i++) {
 positions.sort(() => Math.random() - 0.5);
 positions.forEach(p => container.appendChild(p));
 
-/* Drag and Touch support */
+/* Tap to swap pieces */
 positions.forEach(piece => {
-    // Desktop drag
-    piece.draggable = true;
-    piece.addEventListener("dragstart", e => draggedPiece = e.target);
-    piece.addEventListener("dragover", e => e.preventDefault());
-    piece.addEventListener("drop", e => {
-        e.preventDefault();
-        swapPieces(draggedPiece, e.target);
-        checkSolved();
-    });
-
-    // Mobile touch drag
-    piece.addEventListener("touchstart", e => {
-        draggedPiece = e.target;
-        const rect = draggedPiece.getBoundingClientRect();
-        offsetX = e.touches[0].clientX - rect.left;
-        offsetY = e.touches[0].clientY - rect.top;
-        draggedPiece.style.position = "absolute";
-        draggedPiece.style.zIndex = 1000;
-    });
-
-    piece.addEventListener("touchmove", e => {
-        e.preventDefault();
-        draggedPiece.style.left = (e.touches[0].clientX - offsetX) + "px";
-        draggedPiece.style.top = (e.touches[0].clientY - offsetY) + "px";
-    });
-
-    piece.addEventListener("touchend", e => {
-        draggedPiece.style.position = "relative";
-        draggedPiece.style.left = "";
-        draggedPiece.style.top = "";
-        draggedPiece.style.zIndex = "";
-
-        const touchX = e.changedTouches[0].clientX;
-        const touchY = e.changedTouches[0].clientY;
-        const elements = document.elementsFromPoint(touchX, touchY);
-        const target = elements.find(el => el.classList && el.classList.contains("piece"));
-        if (target && target !== draggedPiece) {
-            swapPieces(draggedPiece, target);
+    piece.addEventListener("click", () => {
+        if (!firstSelected) {
+            firstSelected = piece;
+            piece.style.transform = "scale(1.1)";
+        } else {
+            swapPieces(firstSelected, piece);
+            firstSelected.style.transform = "";
+            firstSelected = null;
+            checkSolved();
         }
-        checkSolved();
     });
 });
 
