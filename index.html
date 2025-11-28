@@ -106,7 +106,7 @@ body {
 
 <div class="title-box">
     <h1>🎄 Magical Christmas Puzzle 🎄</h1>
-    <p>Drag and drop the pieces to solve!</p>
+    <p>Click or tap pieces to slide them into the empty space!</p>
 </div>
 
 <div id="puzzleContainer"></div>
@@ -135,9 +135,10 @@ const imageURL = "santaclause.avif";
 const GRID_SIZE = 4;
 const pieceSize = 100 / GRID_SIZE; // percentage
 let pieces = [];
+let emptySlot = { x: GRID_SIZE - 1, y: GRID_SIZE - 1 }; // last slot is empty
 
-// create pieces
-for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+// create pieces (skip last one for empty)
+for (let i = 0; i < GRID_SIZE * GRID_SIZE - 1; i++) {
     let piece = document.createElement("div");
     piece.className = "piece";
     piece.dataset.index = i;
@@ -151,74 +152,56 @@ for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
     piece.style.backgroundPosition = `${-x * 100}% ${-y * 100}%`;
 
     container.appendChild(piece);
-    pieces.push({el: piece, x, y});
+    pieces.push({ el: piece, x, y, currentX: x, currentY: y });
 }
 
 // shuffle pieces
-pieces.sort(() => Math.random() - 0.5);
-pieces.forEach((p, i) => {
-    let x = i % GRID_SIZE;
-    let y = Math.floor(i / GRID_SIZE);
-    p.el.style.left = `${x * pieceSize}%`;
-    p.el.style.top = `${y * pieceSize}%`;
-    p.currentX = x;
-    p.currentY = y;
-});
+shufflePieces();
 
-// touch drag logic
-let selected = null;
+function shufflePieces() {
+    let positions = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            if (x === emptySlot.x && y === emptySlot.y) continue;
+            positions.push({ x, y });
+        }
+    }
+    positions.sort(() => Math.random() - 0.5);
+
+    pieces.forEach((p, i) => {
+        p.currentX = positions[i].x;
+        p.currentY = positions[i].y;
+        p.el.style.left = `${p.currentX * pieceSize}%`;
+        p.el.style.top = `${p.currentY * pieceSize}%`;
+    });
+}
+
+// click/touch to slide into empty slot
 pieces.forEach(p => {
     const el = p.el;
-    el.addEventListener("touchstart", e => {
-        selected = p;
-        el.style.zIndex = 1000;
-        el.startX = e.touches[0].clientX;
-        el.startY = e.touches[0].clientY;
-    });
-
-    el.addEventListener("touchmove", e => {
-        e.preventDefault();
-        if (!selected) return;
-        let dx = e.touches[0].clientX - selected.startX;
-        let dy = e.touches[0].clientY - selected.startY;
-        el.style.transform = `translate(${dx}px, ${dy}px)`;
-    });
-
-    el.addEventListener("touchend", e => {
-        el.style.transform = "";
-        el.style.zIndex = "";
-        // find nearest slot
-        let rect = container.getBoundingClientRect();
-        let dx = e.changedTouches[0].clientX - rect.left;
-        let dy = e.changedTouches[0].clientY - rect.top;
-        let xSlot = Math.floor(dx / (rect.width / GRID_SIZE));
-        let ySlot = Math.floor(dy / (rect.height / GRID_SIZE));
-
-        // find piece in that slot
-        let target = pieces.find(other => other.currentX === xSlot && other.currentY === ySlot);
-        if (target && target !== selected) {
-            // swap
-            let tempX = selected.currentX;
-            let tempY = selected.currentY;
-            selected.currentX = target.currentX;
-            selected.currentY = target.currentY;
-            target.currentX = tempX;
-            target.currentY = tempY;
-
-            selected.el.style.left = `${selected.currentX * pieceSize}%`;
-            selected.el.style.top = `${selected.currentY * pieceSize}%`;
-            target.el.style.left = `${target.currentX * pieceSize}%`;
-            target.el.style.top = `${target.currentY * pieceSize}%`;
-        } else {
-            // snap back
-            selected.el.style.left = `${selected.currentX * pieceSize}%`;
-            selected.el.style.top = `${selected.currentY * pieceSize}%`;
-        }
-
-        selected = null;
-        checkSolved();
-    });
+    el.addEventListener("click", () => movePiece(p));
+    el.addEventListener("touchend", () => movePiece(p));
 });
+
+function movePiece(p) {
+    const dx = Math.abs(p.currentX - emptySlot.x);
+    const dy = Math.abs(p.currentY - emptySlot.y);
+    if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+        let tempX = p.currentX;
+        let tempY = p.currentY;
+
+        p.currentX = emptySlot.x;
+        p.currentY = emptySlot.y;
+
+        emptySlot.x = tempX;
+        emptySlot.y = tempY;
+
+        p.el.style.left = `${p.currentX * pieceSize}%`;
+        p.el.style.top = `${p.currentY * pieceSize}%`;
+
+        checkSolved();
+    }
+}
 
 function checkSolved() {
     let solved = pieces.every(p => p.currentX === p.x && p.currentY === p.y);
