@@ -24,6 +24,18 @@
         margin: 20px auto;
     }
 
+    .title-box h1 {
+        font-size: 2em;
+    }
+
+    @media (max-width: 768px) {
+        .title-box h1 { font-size: 1.5em; }
+    }
+
+    @media (max-width: 480px) {
+        .title-box h1 { font-size: 1.2em; }
+    }
+
     #puzzleContainer {
         width: 90vw;
         max-width: 520px;
@@ -37,17 +49,13 @@
         box-shadow: 0 0 25px rgba(255,0,0,0.5);
     }
 
-    /* Make puzzle fit smaller screens */
     @media (max-width: 500px) {
         #puzzleContainer {
             width: 95vw;
             height: 95vw;
             margin: 15px auto;
         }
-        .title-box {
-            font-size: 14px;
-            padding: 10px;
-        }
+        .title-box { font-size: 14px; padding: 10px; }
     }
 
     .piece {
@@ -67,9 +75,8 @@
         text-shadow: 0 0 10px #000;
     }
 
-    /* CENTERED TAP-TO-REVEAL BUTTON */
     #revealButton {
-        display: none; /* hidden until puzzle solved */
+        display: none;
         margin: 25px auto 0 auto;
         padding: 14px 30px;
         background: #ff4242;
@@ -82,10 +89,7 @@
         width: fit-content;
     }
 
-    #revealButton:hover {
-        background: #d62828;
-        transform: scale(1.05);
-    }
+    #revealButton:hover { background: #d62828; transform: scale(1.05); }
 
     #revealSection {
         display: none;
@@ -99,6 +103,7 @@
         border-radius: 15px;
         box-shadow: 0 0 15px rgba(0,0,0,0.3);
         color: black;
+        position: relative;
     }
 
     #locationBtn {
@@ -113,13 +118,20 @@
         transition: 0.3s;
     }
 
-    #locationBtn:hover {
-        background: #1859c9;
-        transform: scale(1.05);
+    #locationBtn:hover { background: #1859c9; transform: scale(1.05); }
+
+    /* Confetti canvas full screen */
+    #confettiCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
     }
 </style>
 </head>
-
 <body>
 
 <div class="title-box">
@@ -128,159 +140,154 @@
 </div>
 
 <div id="puzzleContainer"></div>
-
 <h3 id="status"></h3>
 
 <button id="revealButton" onclick="showReveal()">🎁 Tap to Reveal 🎁</button>
 
 <div id="revealSection">
     <h2>🎉 You're Invited! 🎉</h2>
-
     <img src="lcd.jpeg" style="width: 100%; border-radius: 12px; margin-bottom: 20px;">
-
-    <h3 style="text-align:center; margin-top:10px; margin-bottom:20px;">
-        ✨ Last year's glimpse ✨
-    </h3>
-
+    <h3 style="text-align:center; margin-top:10px; margin-bottom:20px;">✨ Last year's glimpse ✨</h3>
     <video width="100%" controls style="border-radius:12px;">
         <source src="reveal.mp4" type="video/mp4">
+        Your browser does not support the video tag.
     </video>
-
     <a href="https://maps.app.goo.gl/EAegB1xxzohSTVRY9" target="_blank">
         <button id="locationBtn">📍 Event Location</button>
     </a>
 </div>
 
+<canvas id="confettiCanvas"></canvas>
+
 <script>
 const container = document.getElementById("puzzleContainer");
 const imageURL = "santaclause.avif";
-
 const GRID = 3;
 const pieceSize = 100 / GRID;
-
 let pieces = [];
 let selected = null;
 let offsetX = 0, offsetY = 0;
 
 // Create puzzle pieces
-for (let i = 0; i < GRID * GRID; i++) {
+for (let i = 0; i < GRID*GRID; i++) {
     const piece = document.createElement("div");
     piece.className = "piece";
-
     const x = i % GRID;
     const y = Math.floor(i / GRID);
-
     piece.style.backgroundImage = `url(${imageURL})`;
-    piece.style.backgroundPosition = `${-x * 100}% ${-y * 100}%`;
-    piece.style.backgroundSize = `${GRID * 100}% ${GRID * 100}%`;
-
+    piece.style.backgroundPosition = `${-x*100}% ${-y*100}%`;
+    piece.style.backgroundSize = `${GRID*100}% ${GRID*100}%`;
     container.appendChild(piece);
-
-    pieces.push({
-        el: piece,
-        correctX: x,
-        correctY: y,
-        currentX: x,
-        currentY: y
-    });
+    pieces.push({ el: piece, correctX: x, correctY: y, currentX: x, currentY: y });
 }
 
-// Shuffle puzzle
-pieces.sort(() => Math.random() - 0.5);
-pieces.forEach((p, i) => {
+// Shuffle pieces
+pieces.sort(()=>Math.random()-0.5);
+pieces.forEach((p,i)=>{
     p.currentX = i % GRID;
-    p.currentY = Math.floor(i / GRID);
-    p.el.style.left = `${p.currentX * pieceSize}%`;
-    p.el.style.top = `${p.currentY * pieceSize}%`;
+    p.currentY = Math.floor(i/GRID);
+    p.el.style.left = `${p.currentX*pieceSize}%`;
+    p.el.style.top = `${p.currentY*pieceSize}%`;
 });
 
-// Drag functionality
-pieces.forEach(p => {
+// Drag & drop
+pieces.forEach(p=>{
     const el = p.el;
-
-    el.addEventListener("pointerdown", e => {
-        selected = p;
-        el.setPointerCapture(e.pointerId);
-
-        const rect = el.getBoundingClientRect();
+    el.addEventListener("pointerdown", e=>{
+        selected=p; el.setPointerCapture(e.pointerId);
+        const rect=el.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
-
-        el.style.zIndex = 1000;
+        el.style.zIndex=1000;
     });
-
-    el.addEventListener("pointermove", e => {
-        if (!selected) return;
-
-        let rect = container.getBoundingClientRect();
-        el.style.left = `${e.clientX - rect.left - offsetX}px`;
-        el.style.top = `${e.clientY - rect.top - offsetY}px`;
+    el.addEventListener("pointermove", e=>{
+        if(!selected) return;
+        const rect=container.getBoundingClientRect();
+        el.style.left=`${e.clientX-rect.left-offsetX}px`;
+        el.style.top=`${e.clientY-rect.top-offsetY}px`;
     });
-
-    el.addEventListener("pointerup", e => {
-        if (!selected) return;
-
-        el.style.zIndex = "";
-
-        let rect = container.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
-
-        let slotX = Math.max(0, Math.min(GRID - 1, Math.floor(x / (rect.width / GRID))));
-        let slotY = Math.max(0, Math.min(GRID - 1, Math.floor(y / (rect.height / GRID))));
-
-        let target = pieces.find(pp => pp.currentX === slotX && pp.currentY === slotY);
-
-        if (target && target !== selected) {
-            let tX = selected.currentX;
-            let tY = selected.currentY;
-
-            selected.currentX = slotX;
-            selected.currentY = slotY;
-            target.currentX = tX;
-            target.currentY = tY;
-
-            target.el.style.left = `${tX * pieceSize}%`;
-            target.el.style.top = `${tY * pieceSize}%`;
+    el.addEventListener("pointerup", e=>{
+        if(!selected) return;
+        el.style.zIndex="";
+        const rect=container.getBoundingClientRect();
+        let x=Math.max(0,Math.min(GRID-1,Math.floor((e.clientX-rect.left)/(rect.width/GRID))));
+        let y=Math.max(0,Math.min(GRID-1,Math.floor((e.clientY-rect.top)/(rect.height/GRID))));
+        let target=pieces.find(pp=>pp.currentX===x && pp.currentY===y);
+        if(target && target!==selected){
+            let tX=selected.currentX, tY=selected.currentY;
+            selected.currentX=x; selected.currentY=y;
+            target.currentX=tX; target.currentY=tY;
+            target.el.style.left=`${tX*pieceSize}%`;
+            target.el.style.top=`${tY*pieceSize}%`;
         } else {
-            selected.currentX = slotX;
-            selected.currentY = slotY;
+            selected.currentX=x; selected.currentY=y;
         }
-
-        selected.el.style.left = `${selected.currentX * pieceSize}%`;
-        selected.el.style.top = `${selected.currentY * pieceSize}%`;
-
-        selected = null;
-
+        selected.el.style.left=`${selected.currentX*pieceSize}%`;
+        selected.el.style.top=`${selected.currentY*pieceSize}%`;
+        selected=null;
         checkSolved();
     });
 });
 
-// Check if puzzle solved
-function checkSolved() {
-    let solved = pieces.every(p =>
-        p.currentX === p.correctX && p.currentY === p.correctY
-    );
-
-    if (solved) {
-        document.getElementById("status").innerHTML = "🎉 Puzzle Solved!";
-        document.getElementById("status").style.color = "lightgreen";
-
-        document.querySelector(".title-box").style.display = "none";
-        document.getElementById("puzzleContainer").style.display = "none";
-
-        // Show centered reveal button
-        document.getElementById("revealButton").style.display = "block";
+// Check solved
+function checkSolved(){
+    let solved=pieces.every(p=>p.currentX===p.correctX && p.currentY===p.correctY);
+    if(solved){
+        document.getElementById("status").innerHTML="🎉 Puzzle Solved!";
+        document.getElementById("status").style.color="lightgreen";
+        document.querySelector(".title-box").style.display="none";
+        document.getElementById("puzzleContainer").style.display="none";
+        document.getElementById("revealButton").style.display="block";
     }
 }
 
-// Reveal content and remove button forever
-function showReveal() {
-    document.getElementById("revealButton").style.display = "none";
-    document.getElementById("status").style.display = "none";
-    document.getElementById("revealSection").style.display = "block";
+// Reveal & fireworks
+function showReveal(){
+    document.getElementById("revealButton").style.display="none";
+    document.getElementById("status").style.display="none";
+    document.getElementById("revealSection").style.display="block";
+    launchConfetti();
+}
+
+// Simple confetti effect
+function launchConfetti(){
+    const canvas=document.getElementById("confettiCanvas");
+    const ctx=canvas.getContext("2d");
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+
+    let confetti=[];
+    for(let i=0;i<150;i++){
+        confetti.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height- canvas.height,
+            r: Math.random()*6+4,
+            d: Math.random()*100+10,
+            color:`hsl(${Math.random()*360},100%,50%)`,
+            tilt:Math.random()*10-10,
+            tiltAngleIncremental:Math.random()*0.07+0.05,
+            tiltAngle:0
+        });
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        confetti.forEach(c=>{
+            ctx.beginPath();
+            ctx.lineWidth=c.r/2;
+            ctx.strokeStyle=c.color;
+            ctx.moveTo(c.x+c.tilt+c.r/4,c.y);
+            ctx.lineTo(c.x+c.tilt,c.y+c.tilt+c.r/4);
+            ctx.stroke();
+            c.tiltAngle+=c.tiltAngleIncremental;
+            c.y+=Math.cos(c.d)+1+c.r/2;
+            c.tilt=Math.sin(c.tiltAngle)*12;
+            if(c.y>canvas.height){ c.y=-10; c.x=Math.random()*canvas.width; }
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
 }
 </script>
-
 </body>
 </html>
