@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Christmas Puzzle Reveal</title>
+
+<style>
+    body {
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(circle at center, #301934 0%, #0d0510 90%);
+        color: white;
+        text-align: center;
+    }
+
+    .title-box {
+        padding: 20px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 12px;
+        width: 80%;
+        margin: 20px auto;
+    }
+
+    #puzzleContainer {
+        width: 90vw;
+        max-width: 520px;
+        height: 90vw;
+        max-height: 520px;
+        margin: 30px auto;
+        position: relative;
+        border: 4px solid #ff4d4d;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.15);
+        box-shadow: 0 0 25px rgba(255,0,0,0.5);
+    }
+
+    .piece {
+        width: 33.333%;
+        height: 33.333%;
+        background-size: 300% 300%;
+        border-radius: 8px;
+        border: 2px solid rgba(255,255,255,0.4);
+        position: absolute;
+        touch-action: none;
+        transition: left 0.15s ease, top 0.15s ease;
+    }
+
+    #status {
+        font-size: 18px;
+        font-weight: bold;
+        text-shadow: 0 0 10px #000;
+    }
+
+    /* PERFECTLY CENTERED BUTTON */
+    #revealButton {
+        display: none; /* Hidden until puzzle solved */
+        margin: 25px auto 0 auto;
+        padding: 14px 30px;
+        background: #ff4242;
+        border: none;
+        color: white;
+        font-size: 20px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.3s;
+        width: fit-content;
+        display: none;
+    }
+
+    #revealButton:hover {
+        background: #d62828;
+        transform: scale(1.05);
+    }
+
+    #revealSection {
+        display: none;
+        margin-top: 40px;
+        padding: 20px;
+        width: 90%;
+        max-width: 450px;
+        margin-left: auto;
+        margin-right: auto;
+        background: rgba(255,255,255,0.9);
+        border-radius: 15px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        color: black;
+    }
+
+    #locationBtn {
+        margin-top: 15px;
+        padding: 12px 20px;
+        background: #2c7dff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    #locationBtn:hover {
+        background: #1859c9;
+        transform: scale(1.05);
+    }
+</style>
+</head>
+
+<body>
+
+<div class="title-box">
+    <h1>🎄 Magical Christmas Puzzle 🎄</h1>
+    <p>Drag and drop the pieces to solve!</p>
+</div>
+
+<div id="puzzleContainer"></div>
+
+<h3 id="status"></h3>
+
+<button id="revealButton" onclick="showReveal()">🎁 Tap to Reveal 🎁</button>
+
+<div id="revealSection">
+    <h2>🎉 You're Invited! 🎉</h2>
+
+    <img src="lcd.jpeg" style="width: 100%; border-radius: 12px; margin-bottom: 20px;">
+
+    <h3 style="text-align:center; margin-top:10px; margin-bottom:20px;">
+        ✨ Last year's glimpse ✨
+    </h3>
+
+    <video width="100%" controls style="border-radius:12px;">
+        <source src="reveal.mp4" type="video/mp4">
+    </video>
+
+    <a href="https://maps.app.goo.gl/EAegB1xxzohSTVRY9" target="_blank">
+        <button id="locationBtn">📍 Event Location</button>
+    </a>
+</div>
+
+<script>
+const container = document.getElementById("puzzleContainer");
+const imageURL = "santaclause.avif";
+
+const GRID = 3;
+const pieceSize = 100 / GRID;
+
+let pieces = [];
+let selected = null;
+let offsetX = 0, offsetY = 0;
+
+// Create puzzle pieces
+for (let i = 0; i < GRID * GRID; i++) {
+    const piece = document.createElement("div");
+    piece.className = "piece";
+
+    const x = i % GRID;
+    const y = Math.floor(i / GRID);
+
+    piece.style.backgroundImage = `url(${imageURL})`;
+    piece.style.backgroundPosition = `${-x * 100}% ${-y * 100}%`;
+    piece.style.backgroundSize = `${GRID * 100}% ${GRID * 100}%`;
+
+    container.appendChild(piece);
+
+    pieces.push({
+        el: piece,
+        correctX: x,
+        correctY: y,
+        currentX: x,
+        currentY: y
+    });
+}
+
+// Shuffle puzzle
+pieces.sort(() => Math.random() - 0.5);
+pieces.forEach((p, i) => {
+    p.currentX = i % GRID;
+    p.currentY = Math.floor(i / GRID);
+    p.el.style.left = `${p.currentX * pieceSize}%`;
+    p.el.style.top = `${p.currentY * pieceSize}%`;
+});
+
+// Drag functionality
+pieces.forEach(p => {
+    const el = p.el;
+
+    el.addEventListener("pointerdown", e => {
+        selected = p;
+        el.setPointerCapture(e.pointerId);
+
+        const rect = el.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        el.style.zIndex = 1000;
+    });
+
+    el.addEventListener("pointermove", e => {
+        if (!selected) return;
+
+        let rect = container.getBoundingClientRect();
+        el.style.left = `${e.clientX - rect.left - offsetX}px`;
+        el.style.top = `${e.clientY - rect.top - offsetY}px`;
+    });
+
+    el.addEventListener("pointerup", e => {
+        if (!selected) return;
+
+        el.style.zIndex = "";
+
+        let rect = container.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        let slotX = Math.max(0, Math.min(GRID - 1, Math.floor(x / (rect.width / GRID))));
+        let slotY = Math.max(0, Math.min(GRID - 1, Math.floor(y / (rect.height / GRID))));
+
+        let target = pieces.find(pp => pp.currentX === slotX && pp.currentY === slotY);
+
+        if (target && target !== selected) {
+            let tX = selected.currentX;
+            let tY = selected.currentY;
+
+            selected.currentX = slotX;
+            selected.currentY = slotY;
+            target.currentX = tX;
+            target.currentY = tY;
+
+            target.el.style.left = `${tX * pieceSize}%`;
+            target.el.style.top = `${tY * pieceSize}%`;
+        } else {
+            selected.currentX = slotX;
+            selected.currentY = slotY;
+        }
+
+        selected.el.style.left = `${selected.currentX * pieceSize}%`;
+        selected.el.style.top = `${selected.currentY * pieceSize}%`;
+
+        selected = null;
+
+        checkSolved();
+    });
+});
+
+// Check if puzzle solved
+function checkSolved() {
+    let solved = pieces.every(p =>
+        p.currentX === p.correctX && p.currentY === p.correctY
+    );
+
+    if (solved) {
+        document.getElementById("status").innerHTML = "🎉 Puzzle Solved!";
+        document.getElementById("status").style.color = "lightgreen";
+
+        document.querySelector(".title-box").style.display = "none";
+        document.getElementById("puzzleContainer").style.display = "none";
+
+        // Show centered reveal button
+        document.getElementById("revealButton").style.display = "block";
+    }
+}
+
+// Reveal content and remove button forever
+function showReveal() {
+    document.getElementById("revealButton").style.display = "none";
+    document.getElementById("status").style.display = "none";
+    document.getElementById("revealSection").style.display = "block";
+}
+</script>
+
+</body>
+</html>
