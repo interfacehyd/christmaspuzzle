@@ -148,7 +148,7 @@
     <h2>🎉 You're Invited! 🎉</h2>
     <img src="lcd.jpeg" style="width: 100%; border-radius: 12px; margin-bottom: 20px;">
     <h3 style="text-align:center; margin-top:10px; margin-bottom:20px;">✨ Last year's glimpse ✨</h3>
-    <video width="100%" controls style="border-radius:12px;">
+    <video id="revealVideo" width="100%" controls style="border-radius:12px;">
         <source src="reveal.mp4" type="video/mp4">
         Your browser does not support the video tag.
     </video>
@@ -237,57 +237,4 @@ function checkSolved(){
         document.getElementById("status").style.color="lightgreen";
         document.querySelector(".title-box").style.display="none";
         document.getElementById("puzzleContainer").style.display="none";
-        document.getElementById("revealButton").style.display="block";
-    }
-}
-
-// Reveal & fireworks
-function showReveal(){
-    document.getElementById("revealButton").style.display="none";
-    document.getElementById("status").style.display="none";
-    document.getElementById("revealSection").style.display="block";
-    launchConfetti();
-}
-
-// Simple confetti effect
-function launchConfetti(){
-    const canvas=document.getElementById("confettiCanvas");
-    const ctx=canvas.getContext("2d");
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-
-    let confetti=[];
-    for(let i=0;i<150;i++){
-        confetti.push({
-            x: Math.random()*canvas.width,
-            y: Math.random()*canvas.height- canvas.height,
-            r: Math.random()*6+4,
-            d: Math.random()*100+10,
-            color:`hsl(${Math.random()*360},100%,50%)`,
-            tilt:Math.random()*10-10,
-            tiltAngleIncremental:Math.random()*0.07+0.05,
-            tiltAngle:0
-        });
-    }
-
-    function draw(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        confetti.forEach(c=>{
-            ctx.beginPath();
-            ctx.lineWidth=c.r/2;
-            ctx.strokeStyle=c.color;
-            ctx.moveTo(c.x+c.tilt+c.r/4,c.y);
-            ctx.lineTo(c.x+c.tilt,c.y+c.tilt+c.r/4);
-            ctx.stroke();
-            c.tiltAngle+=c.tiltAngleIncremental;
-            c.y+=Math.cos(c.d)+1+c.r/2;
-            c.tilt=Math.sin(c.tiltAngle)*12;
-            if(c.y>canvas.height){ c.y=-10; c.x=Math.random()*canvas.width; }
-        });
-        requestAnimationFrame(draw);
-    }
-    draw();
-}
-</script>
-</body>
-</html>
+        do
